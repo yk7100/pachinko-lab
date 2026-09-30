@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="大当たり確率、出玉振り分け、ST・転落・小当たりラッシュを自由に設定できるパチンコシミュレーター。">
+  <meta name="theme-color" content="#0b121b"><title>PACHINKO LAB | パチンコシミュレーター</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="./"><span class="brand-mark">P</span><span>PACHINKO <b>LAB</b></span></a><span class="header-note">自分だけのスペックを、回してみる。</span><button id="help-open" class="quiet">モデルについて <span aria-hidden="true">ⓘ</span></button></header>
+  <main>
+    <div class="page-heading"><div><p class="eyebrow">PACHINKO SIMULATOR</p><h1>スペックを作る。<span>結果を試す。</span></h1></div><span class="simulation-label"><i></i> 確率シミュレーション</span></div>
+    <div class="workspace">
+      <aside class="settings panel">
+        <div class="section-heading"><h2>台の設定</h2><span class="micro">SPEC SETTINGS</span></div>
+        <label class="preset-label" for="preset">サンプルスペック</label><select id="preset"><option value="st">ST / ロングST</option><option value="fall">転落 / 確率競争</option><option value="small">小当たり / RUSH</option></select>
+        <p class="hint">架空のスペックです。自由に変更できます。</p>
+        <div class="setting-tabs" role="tablist" aria-label="設定の種類"><button class="selected" role="tab" aria-selected="true" aria-controls="left-settings" id="left-tab" data-tab="left">左打ち</button><button role="tab" aria-selected="false" aria-controls="right-settings" id="right-tab" data-tab="right">右打ち</button><button role="tab" aria-selected="false" aria-controls="ball-settings" id="ball-tab" data-tab="ball">出玉・消費</button></div>
+        <form id="settings-form" novalidate>
+          <div id="left-settings" class="settings-pane" role="tabpanel" aria-labelledby="left-tab">
+            <div class="subheading"><span class="step-label">01</span><h3>通常時の抽選</h3></div>
+            <label class="field">大当たり確率<span class="input-wrap"><span>1 /</span><input name="normalOdds" type="number" min="1" max="1000000" step="any" required value="319.7"></span></label>
+            <label class="field">チャージ確率<span class="input-wrap"><span>1 /</span><input name="chargeOdds" type="number" min="0" max="1000000" step="any" required value="0"></span><small>0でチャージを無効にできます</small></label>
+            <label class="field">大当たりからの右打ち突入率<span class="input-wrap"><input name="entryRate" type="number" min="0" max="100" step="any" required value="60"><span>%</span></span></label>
+            <details><summary>チャージの詳細</summary><label class="field">チャージ出玉<span class="input-wrap"><input name="chargeBalls" type="number" min="0" max="100000" step="1" required value="300"><span>玉</span></span></label><label class="field">チャージからの右打ち突入率<span class="input-wrap"><input name="chargeEntry" type="number" min="0" max="100" step="any" required value="0"><span>%</span></span></label></details>
+          </div>
+          <div id="right-settings" class="settings-pane" role="tabpanel" aria-labelledby="right-tab" hidden>
+            <div class="subheading"><span class="step-label">02</span><h3>右打ちのしくみ</h3></div>
+            <label class="field">右打ちタイプ<select name="type"><option value="st">STタイプ</option><option value="small">小当たりラッシュ</option><option value="fall">転落タイプ</option></select></label>
+            <label class="field">右打ち中の大当たり確率<span class="input-wrap"><span>1 /</span><input name="rightOdds" type="number" min="1" max="1000000" step="any" required value="99.9"></span></label>
+            <div data-mode="st"><label class="field">ST回転数<span class="input-wrap"><input name="stSpins" type="number" min="1" max="10000" step="1" required value="163"><span>回</span></span></label><label class="field">残保留<span class="input-wrap"><input name="residual" type="number" min="0" max="100" step="1" required value="4"><span>回</span></span></label><p class="hint">継続当たりでSTをリセット。残保留も同じ確率で抽選します。</p></div>
+            <div data-mode="fall" hidden><label class="field">転落確率<span class="input-wrap"><span>1 /</span><input name="fallOdds" type="number" min="1" max="1000000" step="any" required value="150"></span></label><p class="hint">当たりを先に抽選し、ハズレた回転で転落を抽選します。</p></div>
+            <div data-mode="small" hidden><label class="field">小当たり確率<span class="input-wrap"><span>1 /</span><input name="smallOdds" type="number" min="1" max="1000000" step="any" required value="1.5"></span></label><label class="field">小当たり1回の出玉<span class="input-wrap"><input name="smallBalls" type="number" min="0" max="100000" step="1" required value="12"><span>玉</span></span></label><p class="hint">大当たりのハズレ時に小当たりを抽選。大当たりの振り分けでRUSH終了を設定します。</p></div>
+          </div>
+          <div id="ball-settings" class="settings-pane" role="tabpanel" aria-labelledby="ball-tab" hidden>
+            <div class="subheading"><span class="step-label">03</span><h3>出玉と消費玉</h3></div>
+            <label class="field">通常時・250玉あたりの回転数<span class="input-wrap"><input name="spinsPer250" type="number" min="0.1" max="1000" step="any" required value="18"><span>回</span></span></label>
+            <label class="field">右打ち・1回転あたりの消費玉<span class="input-wrap"><input name="rightCost" type="number" min="0" max="100" step="any" required value="0.5"><span>玉</span></span></label>
+            <div class="distribution-heading"><h3>初当たりの振り分け</h3><button type="button" class="text-button" data-add="normal">＋ 追加</button></div><div class="row-labels"><span>獲得出玉</span><span>割合</span><span></span></div><div id="normal-rows"></div><p id="normal-total" class="weight-total"></p>
+            <div class="distribution-heading"><h3>右打ちの振り分け</h3><button type="button" class="text-button" data-add="right">＋ 追加</button></div><div class="row-labels right-labels"><span>獲得出玉</span><span>割合</span><span>終了後</span><span></span></div><div id="right-rows"></div><p id="right-total" class="weight-total"></p><p class="hint">出玉は実際に獲得する玉数を入力。右打ち中の消費玉は別途差し引きます。</p>
+          </div>
+          <div id="settings-error" role="alert" class="error" hidden></div><button type="submit" class="apply-button">設定を適用してリセット</button><p id="settings-status" class="hint settings-status" aria-live="polite">設定はこのブラウザに保存されます</p>
+        </form>
+      </aside>
+      <div class="main-column">
+        <section class="machine panel" id="machine">
+          <div class="machine-top"><div><span class="micro">CURRENT SESSION</span><h2 id="machine-name">カスタム ST</h2></div><span id="mode-badge" class="mode-badge">左打ち · 通常</span></div>
+          <div class="machine-screen"><div class="screen-caption"><span id="screen-label">NORMAL MODE</span><span id="screen-probability">大当たり 1/319.7</span></div><div class="reels" aria-hidden="true"><span>3</span><span>1</span><span>9</span></div><div class="screen-message" id="screen-message" aria-live="polite">1回転から、はじめよう。</div><div class="screen-bottom"><span>初当たりまで <b id="since-hit">0</b> 回転</span><span id="remaining-label">右打ち突入率 <b>60%</b></span></div></div>
+          <div class="play-controls"><button id="spin" class="primary"><span aria-hidden="true">▶</span> 1回転まわす</button><button id="spin100" class="secondary">100回転</button><button id="until-hit" class="secondary">当たりまで</button></div>
+          <div class="auto-controls"><button id="auto" class="auto-button">自動でまわす</button><label for="speed">速度</label><select id="speed"><option value="1">1回転 / 秒</option><option value="10" selected>10回転 / 秒</option><option value="100">100回転 / 秒</option></select><button id="reset" class="reset-button">リセット</button></div>
+        </section>
+        <section class="metrics" aria-label="実戦結果"><div class="metric"><span>差玉</span><strong id="net">0<small> 玉</small></strong><p id="paid-used">獲得 0 / 消費 0</p></div><div class="metric"><span>大当たり</span><strong id="hits">0<small> 回</small></strong><p id="initial-hits">初当たり 0 回</p></div><div class="metric"><span>最大連チャン</span><strong id="max-chain">0<small> 連</small></strong><p id="rush-count">右打ち突入 0 回</p></div><div class="metric"><span>総回転数</span><strong id="spins">0<small> 回</small></strong><p id="spin-split">左 0 / 右 0</p></div></section>
+        <section class="panel chart-panel"><div class="section-heading"><h2>差玉の推移</h2><span class="chart-legend"><i></i> 差玉 <span class="micro">BALL BALANCE</span></span></div><div id="chart" class="chart" role="img" aria-label="差玉グラフ"></div><div class="chart-footer"><span>回転数</span><span id="session-small">チャージ 0 回 / 小当たり 0 回</span></div></section>
+        <section class="panel history-panel"><div class="section-heading"><h2>当たり履歴</h2><button id="download" class="text-button">CSV保存</button></div><div class="history-scroll"><table><thead><tr><th>回転</th><th>結果</th><th>出玉</th><th>差玉</th></tr></thead><tbody id="history"><tr><td colspan="4" class="empty">まだ当たりはありません。回して履歴を残しましょう。</td></tr></tbody></table></div><p class="hint history-note">直近200件を表示・保存します</p></section>
+      </div>
+    </div>
+    <section class="batch panel"><div class="batch-heading"><div><p class="eyebrow">MONTE CARLO</p><h2>同じスペックで、何度も試す。</h2><p>通常時を上限まで回し、初当たり・右打ち突入があれば右打ち終了までを1試行として集計。</p></div><div id="theory" class="theory"></div></div><div class="batch-controls"><label>試行回数<select id="batch-count"><option value="100">100回</option><option value="1000" selected>1,000回</option><option value="10000">10,000回</option></select></label><label>通常時の上限<span class="input-wrap"><input id="batch-limit" type="number" min="1" max="10000" step="1" value="1000"><span>回転</span></span></label><label>乱数シード<span class="input-wrap"><input id="seed" type="number" min="0" max="4294967295" step="1" value="777"></span></label><button id="batch-run" class="primary">一括シミュレーション</button></div><progress id="batch-progress" max="100" value="0" hidden aria-label="一括試行の進捗"></progress><p id="batch-status" class="hint" role="status">適用中の設定を使います。同じシードなら結果を再現できます。</p><div id="batch-result" hidden></div></section>
+    <footer><span class="brand-footer">PACHINKO LAB</span><p>確率を試すための簡易モデルです。実機の性能・実際の遊技結果を保証するものではありません。</p><span>すべての抽選はブラウザ内で実行</span></footer>
+  </main>
+  <dialog id="help"><div class="dialog-heading"><h2>シミュレーションの前提</h2><button id="help-close" aria-label="説明を閉じる">×</button></div><p>実機の仕組みをそのまま再現するものではなく、指定した確率を独立に抽選する簡易モデルです。サンプルはすべて架空です。</p><h3>左打ち</h3><p>1回転で「大当たり・チャージ・ハズレ」のいずれかを抽選します。大当たり確率とチャージ確率は排他的な確率です。チャージは大当たり・連チャン数には含めません。初当たりの出玉振り分けと右打ち突入率は独立です。</p><h3>STタイプ</h3><p>ST回転数＋残保留を同じ右打ち確率で抽選します。「継続」の大当たりで回転数をリセットし、「終了」または規定回転数の消化で通常に戻ります。時短・LT・残保留専用確率には対応していません。</p><h3>転落タイプ</h3><p>大当たりを先に抽選し、ハズレた場合に転落を抽選します。転落または大当たり振り分けの「終了」で通常に戻ります。転落後の時短・残保留はありません。1回の当たり獲得率は p / [p + (1−p)f]（p=当たり確率、f=転落確率）です。</p><h3>小当たりラッシュ</h3><p>大当たりを先に抽選し、ハズレた場合に小当たりを抽選します。小当たりは出玉だけを増やし、大当たり振り分けの「終了」でRUSHが終わります。確変ループの簡易モデルで、実機の入賞タイミングや開放時間は再現しません。</p><h3>出玉と一括試行</h3><p>差玉＝獲得出玉−消費玉。通常時の1回転で250÷回転数、右打ちでは指定した玉数を消費します。内部は小数で計算し表示を丸めます。連チャンには最初の大当たりを含みます。一括試行は各試行の右打ちを20万回転で打ち切り、その試行を集計から除外します。継続率100%では終了しない設定も作れます。</p><p>設定はこの端末のブラウザに保存されます。サーバーには送信しません。</p><a href="https://www.kyoraku.co.jp/news/20190115.php" target="_blank" rel="noreferrer">小当たりRUSHの参考：メーカーの紹介</a></dialog>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
