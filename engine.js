@@ -12,6 +12,35 @@ export const presets = {
   small: { ...defaults, name: 'カスタム 小当たりRUSH', type: 'small', rightOdds: 80, smallOdds: 1.5, smallBalls: 12, residual: 0, rightRows: [{ balls: 1000, weight: 70, keep: true }, { balls: 1000, weight: 30, keep: false }] }
 };
 export const clone = value => JSON.parse(JSON.stringify(value));
+export function weightTotal(rows) {
+  let sum = 0, correction = 0;
+  for (const row of rows) {
+    if (!Number.isFinite(row?.weight)) return NaN;
+    const next = sum + row.weight;
+    correction += Math.abs(sum) >= Math.abs(row.weight) ? (sum - next) + row.weight : (row.weight - next) + sum;
+    sum = next;
+  }
+  return sum + correction;
+}
+export function distributionSummary(rows) {
+  const total = weightTotal(rows);
+  const complete = Number.isFinite(total) && Math.abs(total - 100) <= 1e-9;
+  return { total, complete, text: Number.isFinite(total) ? (complete ? '100' : String(Number(total.toFixed(12)))) : '—' };
+}
+export function normalizeDistribution(rows) {
+  const total = weightTotal(rows);
+  if (!rows.length || rows.some(r => !Number.isFinite(r?.weight) || r.weight < 0 || r.weight > 100) || !Number.isFinite(total) || total <= 0) throw new Error('割合に0〜100の数値を入力し、合計を0%より大きくしてください。');
+  const scale = 100000000, target = 100 * scale;
+  const parts = rows.map((row, index) => {
+    const exact = row.weight / total * target;
+    const units = Math.floor(exact);
+    return { index, units, remainder: exact - units };
+  });
+  const missing = target - parts.reduce((sum, p) => sum + p.units, 0);
+  const ranked = [...parts].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  for (let i = 0; i < missing; i++) ranked[i % ranked.length].units++;
+  return rows.map((row, i) => ({ ...row, weight: parts[i].units / scale }));
+}
 export function validate(c) {
   const errors = [];
   if (!['st', 'fall', 'small'].includes(c.type)) errors.push('右打ちタイプが不正です。');
@@ -30,22 +59,23 @@ export function validate(c) {
   for (const [key, label] of [['normalRows', '初当たり'], ['rightRows', '右打ち']]) {
     const rows = c[key];
     if (!Array.isArray(rows) || !rows.length || rows.length > 20) { errors.push(`${label}の振り分けは1〜20行にしてください。`); continue; }
-    if (rows.some(r => !Number.isFinite(r.weight) || r.weight < 0 || r.weight > 100 || !Number.isInteger(r.balls) || r.balls < 0 || r.balls > 100000 || (key === 'rightRows' && typeof r.keep !== 'boolean'))) errors.push(`${label}の振り分けの出玉・割合・継続設定を確認してください。`);
-    if (Math.abs(rows.reduce((sum, r) => sum + r.weight, 0) - 100) > 0.0001) errors.push(`${label}の振り分けの合計を100%にしてください。`);
+    if (rows.some(r => !Number.isFinite(r?.weight) || r.weight < 0 || r.weight > 100 || !Number.isInteger(r.balls) || r.balls < 0 || r.balls > 100000 || (key === 'rightRows' && typeof r.keep !== 'boolean'))) errors.push(`${label}の振り分けの出玉・割合・継続設定を確認してください。`);
+    const summary = distributionSummary(rows);
+    if (!summary.complete) errors.push(`${label}の振り分けの合計は${summary.text}%です。100%にするか「100%に補正」を押してください。`);
   }
   return errors;
 }
 function pick(rows, rng) {
-  const n = rng() * 100; let sum = 0;
+  const n = rng() * weightTotal(rows); let sum = 0;
   for (const row of rows) { sum += row.weight; if (n < sum) return row; }
-  return rows[rows.length - 1];
+  return rows.findLast(row => row.weight > 0);
 }
 export function seeded(seed) {
   let a = seed >>> 0;
   return () => { a += 0x6D2B79F5; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 export function theoretical(c) {
-  const keep = c.rightRows.reduce((s, r) => s + (r.keep ? r.weight : 0), 0) / 100;
+  const keep = weightTotal(c.rightRows.filter(r => r.keep)) / weightTotal(c.rightRows);
   const hit = c.type === 'st' ? -Math.expm1((c.stSpins + c.residual) * Math.log1p(-1 / c.rightOdds))
     : c.type === 'fall' ? (1 / c.rightOdds) / (1 / c.rightOdds + (1 - 1 / c.rightOdds) / c.fallOdds) : 1;
   const cycle = hit * keep;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="大当たり確率、出玉振り分け、ST・転落・小当たりラッシュを自由に設定できるパチンコシミュレーター。">
   <meta name="theme-color" content="#0b121b"><title>PACHINKO LAB | パチンコシミュレーター</title>
-  <link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./style.css?v=distribution2">
 </head>
 <body>
   <header class="site-header"><a class="brand" href="./"><span class="brand-mark">P</span><span>PACHINKO <b>LAB</b></span></a><span class="header-note">自分だけのスペックを、回してみる。</span><button id="help-open" class="quiet">モデルについて <span aria-hidden="true">ⓘ</span></button></header>
@@ -36,8 +36,8 @@
             <div class="subheading"><span class="step-label">03</span><h3>出玉と消費玉</h3></div>
             <label class="field">通常時・250玉あたりの回転数<span class="input-wrap"><input name="spinsPer250" type="number" min="0.1" max="1000" step="any" required value="18"><span>回</span></span></label>
             <label class="field">右打ち・1回転あたりの消費玉<span class="input-wrap"><input name="rightCost" type="number" min="0" max="100" step="any" required value="0.5"><span>玉</span></span></label>
-            <div class="distribution-heading"><h3>初当たりの振り分け</h3><button type="button" class="text-button" data-add="normal">＋ 追加</button></div><div class="row-labels"><span>獲得出玉</span><span>割合</span><span></span></div><div id="normal-rows"></div><p id="normal-total" class="weight-total"></p>
-            <div class="distribution-heading"><h3>右打ちの振り分け</h3><button type="button" class="text-button" data-add="right">＋ 追加</button></div><div class="row-labels right-labels"><span>獲得出玉</span><span>割合</span><span>終了後</span><span></span></div><div id="right-rows"></div><p id="right-total" class="weight-total"></p><p class="hint">出玉は実際に獲得する玉数を入力。右打ち中の消費玉は別途差し引きます。</p>
+            <div class="distribution-heading"><h3>初当たりの振り分け</h3><button type="button" class="text-button" data-add="normal">＋ 追加</button></div><div class="row-labels"><span>獲得出玉</span><span>割合</span><span></span></div><div id="normal-rows"></div><div class="distribution-footer"><button type="button" class="text-button" data-normalize="normal" aria-label="初当たりの振り分けを100%に補正">100%に補正</button><p id="normal-total" class="weight-total"></p></div>
+            <div class="distribution-heading"><h3>右打ちの振り分け</h3><button type="button" class="text-button" data-add="right">＋ 追加</button></div><div class="row-labels right-labels"><span>獲得出玉</span><span>割合</span><span>終了後</span><span></span></div><div id="right-rows"></div><div class="distribution-footer"><button type="button" class="text-button" data-normalize="right" aria-label="右打ちの振り分けを100%に補正">100%に補正</button><p id="right-total" class="weight-total"></p></div><p class="hint">「100%に補正」は振り分けの比率を保って合計を調整します。出玉は実際に獲得する玉数を入力。右打ち中の消費玉は別途差し引きます。</p>
           </div>
           <div id="settings-error" role="alert" class="error" hidden></div><button type="submit" class="apply-button">設定を適用してリセット</button><p id="settings-status" class="hint settings-status" aria-live="polite">設定はこのブラウザに保存されます</p>
         </form>
@@ -58,6 +58,6 @@
     <footer><span class="brand-footer">PACHINKO LAB</span><p>確率を試すための簡易モデルです。実機の性能・実際の遊技結果を保証するものではありません。</p><span>すべての抽選はブラウザ内で実行</span></footer>
   </main>
   <dialog id="help"><div class="dialog-heading"><h2>シミュレーションの前提</h2><button id="help-close" aria-label="説明を閉じる">×</button></div><p>実機の仕組みをそのまま再現するものではなく、指定した確率を独立に抽選する簡易モデルです。サンプルはすべて架空です。</p><h3>左打ち</h3><p>1回転で「大当たり・チャージ・ハズレ」のいずれかを抽選します。大当たり確率とチャージ確率は排他的な確率です。チャージは大当たり・連チャン数には含めません。初当たりの出玉振り分けと右打ち突入率は独立です。</p><h3>STタイプ</h3><p>ST回転数＋残保留を同じ右打ち確率で抽選します。「継続」の大当たりで回転数をリセットし、「終了」または規定回転数の消化で通常に戻ります。時短・LT・残保留専用確率には対応していません。</p><h3>転落タイプ</h3><p>大当たりを先に抽選し、ハズレた場合に転落を抽選します。転落または大当たり振り分けの「終了」で通常に戻ります。転落後の時短・残保留はありません。1回の当たり獲得率は p / [p + (1−p)f]（p=当たり確率、f=転落確率）です。</p><h3>小当たりラッシュ</h3><p>大当たりを先に抽選し、ハズレた場合に小当たりを抽選します。小当たりは出玉だけを増やし、大当たり振り分けの「終了」でRUSHが終わります。確変ループの簡易モデルで、実機の入賞タイミングや開放時間は再現しません。</p><h3>出玉と一括試行</h3><p>差玉＝獲得出玉−消費玉。通常時の1回転で250÷回転数、右打ちでは指定した玉数を消費します。内部は小数で計算し表示を丸めます。連チャンには最初の大当たりを含みます。一括試行は各試行の右打ちを20万回転で打ち切り、その試行を集計から除外します。継続率100%では終了しない設定も作れます。</p><p>設定はこの端末のブラウザに保存されます。サーバーには送信しません。</p><a href="https://www.kyoraku.co.jp/news/20190115.php" target="_blank" rel="noreferrer">小当たりRUSHの参考：メーカーの紹介</a></dialog>
-  <script type="module" src="./app.js?v=1000"></script>
+  <script type="module" src="./app.js?v=distribution2"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { defaults, presets, clone, validate, Machine, theoretical, seeded, runSession } from '../engine.js';
+import { defaults, presets, clone, validate, Machine, theoretical, seeded, runSession, distributionSummary, normalizeDistribution } from '../engine.js';
 const sequence = (...values) => { let i = 0; return () => values[i++] ?? .9; };
 test('invalid probabilities, empty fields and malformed distributions are rejected', () => {
   assert.equal(validate(defaults).length, 0);
@@ -8,6 +8,44 @@ test('invalid probabilities, empty fields and malformed distributions are reject
   assert.ok(validate({ ...defaults, rightOdds: NaN }).length);
   assert.ok(validate({ ...defaults, rightRows: [{ balls: 1500, weight: 99, keep: true }] }).length);
   assert.ok(validate({ ...defaults, rightRows: [{ balls: -1, weight: 100, keep: 'false' }] }).length);
+});
+test('totals near 100 do not misleadingly display 100 when validation fails', () => {
+  for (const final of [.39, .39125]) {
+    const weights = [50, 25, 12.5, 6.25, 3.125, 1.5625, .78125, .390625, final];
+    const rows = weights.map(weight => ({ balls: 3000, weight, keep: true }));
+    const summary = distributionSummary(rows);
+    assert.equal(summary.complete, false);
+    assert.notEqual(summary.text, '100');
+    assert.ok(validate({ ...defaults, rightRows: rows }).some(error => error.includes(`${summary.text}%`)));
+  }
+});
+test('floating point noise is accepted consistently without accepting real deficits', () => {
+  const rows = [33.333333333333336, 33.333333333333336, 33.333333333333336].map(weight => ({ balls: 1500, weight, keep: true }));
+  assert.deepEqual(distributionSummary(rows), { total: 100, complete: true, text: '100' });
+  assert.equal(validate({ ...defaults, rightRows: rows }).length, 0);
+  assert.equal(distributionSummary([{ weight: 99.9999999 }]).complete, false);
+  assert.equal(distributionSummary([{ weight: NaN }]).text, '—');
+});
+test('normalization preserves ratios, outcomes and zero-weight rows while totaling 100', () => {
+  const original = [50, 25, 12.5, 6.25, 3.125, 1.5625, .78125, .390625, .39, 0].map((weight, i) => ({ weight, balls: (i + 1) * 3000, keep: i % 2 === 0 }));
+  const normalized = normalizeDistribution(original);
+  assert.equal(distributionSummary(normalized).complete, true);
+  assert.equal(validate({ ...defaults, rightRows: normalized }).length, 0);
+  assert.equal(normalized.at(-1).weight, 0);
+  const total = original.reduce((sum, r) => sum + r.weight, 0);
+  normalized.forEach((row, i) => {
+    assert.equal(row.balls, original[i].balls); assert.equal(row.keep, original[i].keep);
+    assert.ok(Math.abs(row.weight - original[i].weight / total * 100) < 1e-8);
+  });
+  assert.equal(original[0].weight, 50);
+  assert.throws(() => normalizeDistribution([{ weight: 0 }]));
+  assert.throws(() => normalizeDistribution([{ weight: NaN }]));
+  assert.throws(() => normalizeDistribution([{ weight: -1 }, { weight: 100 }]));
+});
+test('accepted numerical noise never awards a zero-weight terminal outcome', () => {
+  const c = { ...defaults, rightOdds: 1, rightRows: [{ balls: 1500, weight: 100 - 5e-10, keep: true }, { balls: 0, weight: 0, keep: false }] };
+  const m = new Machine(c, () => 1 - Number.EPSILON); m.enter(); m.step();
+  assert.equal(m.s.paid, 1500); assert.equal(m.s.mode, 'st'); assert.equal(theoretical(c).cycle, 1);
 });
 test('initial payout and entry, ST reset and terminal outcome update correctly', () => {
   const c = { ...defaults, normalOdds: 1, entryRate: 100, rightOdds: 1, stSpins: 10, residual: 4, rightRows: [{ balls: 1500, weight: 50, keep: true }, { balls: 3000, weight: 50, keep: false }] };

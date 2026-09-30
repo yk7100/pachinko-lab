@@ -1,4 +1,4 @@
-import { defaults, presets, clone, validate, Machine, theoretical, seeded, runSession } from './engine.js';
+import { defaults, presets, clone, validate, Machine, theoretical, seeded, runSession, distributionSummary, normalizeDistribution } from './engine.js?v=distribution2';
 const $ = id => document.getElementById(id);
 const form = $('settings-form');
 const format = n => Math.round(n).toLocaleString('ja-JP');
@@ -21,9 +21,9 @@ function readForm() {
 }
 function totals() {
   for (const kind of ['normal', 'right']) {
-    const sum = draftRows[kind].reduce((s, r) => s + r.weight, 0);
-    $(`${kind}-total`).textContent = `合計 ${Number.isFinite(sum) ? +sum.toFixed(2) : '—'}% / 100%`;
-    $(`${kind}-total`).classList.toggle('invalid', Math.abs(sum - 100) > 0.0001 || !Number.isFinite(sum));
+    const summary = distributionSummary(draftRows[kind]);
+    $(`${kind}-total`).textContent = `合計 ${summary.text}% / 100%`;
+    $(`${kind}-total`).classList.toggle('invalid', !summary.complete);
   }
 }
 function renderRows() {
@@ -48,6 +48,13 @@ function renderRows() {
 }
 function dirty() { $('settings-status').textContent = '変更を反映するには「設定を適用」を押してください'; }
 document.querySelectorAll('[data-add]').forEach(button => button.addEventListener('click', () => { const kind = button.dataset.add; if (draftRows[kind].length >= 20) return; draftRows[kind].push({ balls: 1500, weight: 0, ...(kind === 'right' ? { keep: true } : {}) }); renderRows(); dirty(); }));
+document.querySelectorAll('[data-normalize]').forEach(button => button.addEventListener('click', () => {
+  try {
+    const kind = button.dataset.normalize;
+    draftRows[kind] = normalizeDistribution(draftRows[kind]);
+    $('settings-error').hidden = true; renderRows(); dirty();
+  } catch (error) { $('settings-error').textContent = error.message; $('settings-error').hidden = false; }
+}));
 const tabs = [...document.querySelectorAll('[data-tab]')];
 function activateTab(button) { tabs.forEach(b => { const selected = b === button; b.classList.toggle('selected', selected); b.setAttribute('aria-selected', selected); b.tabIndex = selected ? 0 : -1; $(`${b.dataset.tab}-settings`).hidden = !selected; }); }
 tabs.forEach((button, i) => { button.addEventListener('click', () => activateTab(button)); button.addEventListener('keydown', e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length; activateTab(tabs[next]); tabs[next].focus(); } }); });
