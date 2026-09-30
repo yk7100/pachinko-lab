@@ -87,7 +87,7 @@ function render(updateHistory = true) {
   $('screen-probability').textContent = `大当たり 1/${rush ? c.rightOdds : c.normalOdds}`;
   $('since-hit').textContent = format(s.sinceHit);
   $('remaining-label').innerHTML = s.mode === 'st' ? `残り <b>${format(s.remaining)}</b> 回転${s.remaining <= c.residual ? '（残保留）' : ''}` : rush ? `今回のRUSH <b>${format(s.rushBalls)}</b> 玉` : `右打ち突入率 <b>${c.entryRate}%</b>`;
-  $('screen-message').textContent = s.spins ? s.last : '1回転から、はじめよう。';
+  $('screen-message').textContent = s.spins ? (s.last === '開始待ち' ? '通常時を抽選中…' : s.last) : '1回転から、はじめよう。';
   $('net').innerHTML = `${signed(machine.net)}<small> 玉</small>`; $('net').classList.toggle('negative', machine.net < 0);
   $('paid-used').textContent = `獲得 ${format(s.paid)} / 消費 ${format(s.used)}`;
   $('hits').innerHTML = `${format(s.hits)}<small> 回</small>`; $('initial-hits').textContent = `初当たり ${format(s.initialHits)} 回`;
