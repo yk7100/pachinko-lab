@@ -112,7 +112,16 @@ function controls() {
 function stopAuto() { if (timer !== null) clearInterval(timer); timer = null; $('auto').textContent = '自動でまわす'; $('auto').classList.remove('running'); controls(); }
 function startAuto() {
   stopAuto(); $('auto').textContent = '自動を停止'; $('auto').classList.add('running');
-  const speed = Number($('speed').value); timer = setInterval(() => { let event, changed = false; for (let i = 0; i < Math.max(1, speed / 10); i++) { event = turn(); if (event.kind !== 'miss') changed = true; if (event.kind === 'hit' || event.kind === 'exit') break; } reels(event); render(changed); }, speed === 1 ? 1000 : 100); controls();
+  const speed = Number($('speed').value);
+  timer = setInterval(() => {
+    let event, resultEvent = null;
+    for (let i = 0; i < Math.max(1, speed / 10); i++) {
+      event = turn();
+      if (event.kind !== 'miss') resultEvent = event;
+    }
+    reels(resultEvent ?? event); render(resultEvent !== null);
+  }, speed === 1 ? 1000 : 100);
+  controls();
 }
 $('auto').addEventListener('click', () => timer === null ? startAuto() : stopAuto()); $('speed').addEventListener('change', () => { if (timer !== null) startAuto(); });
 $('reset').addEventListener('click', () => { stopAuto(); reset(); });
